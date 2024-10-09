@@ -106,21 +106,46 @@ except Exception as e:
     # Si une erreur se produit, affiche l'erreur
     print(f"Erreur lors de la rédaction du thread : {e}")
 
-# *** Clic sur le bouton publier avec ActionChains ***
-# Essaie de localiser et cliquer sur le bouton "Publier" ou "Post"
-try:
-    publish_button = WebDriverWait(driver, 20).until(
-        EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Publier") or contains(text(), "Post")]'))
-    )
+# *** Amélioration : Gestion plus robuste du clic sur le bouton "Publier" ***
+# Liste des XPaths possibles pour le bouton "Publier"
+publish_xpaths = [
+    '//div[contains(text(), "Publier")]',
+    '//div[contains(text(), "Post")]'
+]
 
-    # Simule un mouvement de souris sur le bouton pour imiter un utilisateur humain
-    actions = ActionChains(driver)
-    actions.move_to_element(publish_button).click().perform()
+# Essaie de localiser et cliquer sur le bouton "Publier" en utilisant plusieurs XPaths
+publish_button = None
+for xpath in publish_xpaths:
+    try:
+        publish_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, xpath))
+        )
+        if publish_button:
+            break  # Arrête la boucle si le bouton est trouvé
+    except Exception as e:
+        print(f"Erreur avec le XPath : {xpath}, {e}")
 
-    print("Thread publié avec succès !")
-except Exception as e:
-    # Si une erreur se produit lors de la publication, affiche l'erreur
-    print(f"Erreur lors de la tentative de publication : {e}")
+# Simule un mouvement de souris sur le bouton pour imiter un utilisateur humain et publier
+if publish_button:
+    max_attempts = 3
+    attempts = 0
+    success = False
+    while attempts < max_attempts and not success:
+        try:
+            # Simule un clic sur le bouton avec ActionChains
+            actions = ActionChains(driver)
+            actions.move_to_element(publish_button).click().perform()
+            success = True
+            print("Thread publié avec succès !")
+        except Exception as e:
+            attempts += 1
+            print(f"Tentative {attempts} échouée, réessayer... : {e}")
+            time.sleep(2)  # Pause avant de réessayer
+
+    if not success:
+        print("Impossible de publier le thread après plusieurs tentatives.")
+else:
+    print("Le bouton 'Publier' n'a pas pu être trouvé.")
 
 # *** Attendre quelques secondes pour voir le résultat ***
 # Attend 10 secondes pour observer le résultat avant de fermer le navigateur
